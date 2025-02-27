@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 图片区域 -->
+    <div class="image-area">
+        <div style="font-size: 86px;">【有道领世】在司物料库存管理</div>
+    </div>
+    <meta charset="UTF-8">
+    <title>实时库存管理</title>
+    <style>
+        /* 商务风格样式 */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            color: #2c3e50;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+            text-align: left;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            border-bottom: 4px solid #3498db;
+        }
+        .search-area {
+            margin: 25px 0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .search-box {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: center; /* 改为居中 */
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: middle; /* 垂直居中 */
+        }
+
+        /* 操作按钮列保持原有布局 */
+        tr td:last-child {
+            margin-top: 50px;
+            height: 80px;
+            text-align: space-between; /* 操作按钮保持左对齐 */
+            justify-content: center;
+            display: block;
+            gap: 8px;
+            padding: 5px;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        tr:hover {
+            background-color: #f5faff;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.2);
+            min-width: 320px;
+        }
+        .filter-area {
+            margin: 20px 0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        select, input[type="text"], input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            width: 200px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+        .image-area {
+            margin-top: 40px;
+            height: 150px;
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            padding: 20px;
+        }
+
+        #quantityInput {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+        /* 新增图片相关样式 */
+        .material-image {
+            display: block;
+            margin: 0 auto;
+            max-width: 150px;
+            max-height: 100px;
+            object-fit: contain;
+            border-radius: 1px;
+            transition: transform 0.3s ease-in-out;
+            padding: 1px 0; /* 新增上下间距 */
+        }
+
+        tr td:nth-child(3) { /* 图片列单元格 */
+            padding: 1px 15px !important; /* 上下1px间距 */
+            vertical-align: middle;
+        }
+        .material-image:hover {
+            transform: scale(1.5); /* 悬停放大 1.5 倍 */
+        }
+        .upload-btn-wrapper {
+            position: relative;
+            height: 24px; /* 缩小高度 */
+            margin-top: 2px;
+        }
+
+        .upload-btn {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            background: #27ae60;
+            padding: 2px 4px;
+            font-size: 10px;
+            border-radius: 3px;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 实时库存管理系统</h1>
+        <!-- 搜索区域 -->
+        <div class="search-area">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="输入编码/名称">
+                <select id="subjectFilter">
+                    <option value="">所有学科</option>
+                    <option>语文</option>
+                    <option>数学</option>
+                    <option>英语</option>
+                    <option>物理</option>
+                    <option>化学</option>
+                    <option>生物</option>
+                    <option>地理</option>
+                    <option>政治</option>
+                    <option>历史</option>
+                </select>
+                <select id="versionFilter">
+                    <option value="">所有版本</option>
+                    <option>高频</option>
+                    <option>全归纳</option>
+                    <option>讲透</option>
+                    <option>名师课堂</option>
+                </select>
+                <button onclick="performSearch()">🔍 搜索</button>
+                <button onclick="document.getElementById('batchImportFile').click()">📥 批量入库</button>
+                <input type="file" id="batchImportFile" accept=".csv,.xlsx" style="display:none" onchange="handleBatchImport(event)">
+                <button onclick="document.getElementById('batchExportFile').click()">📤 批量出库</button>
+                <input type="file" id="batchExportFile" accept=".csv,.xlsx" style="display:none" onchange="handleBatchExport(event)">
+                <button onclick="exportInventory()">📊 导出库存</button>
+            </div>
+        </div>
+        <div id="batchConfirmModal" class="modal">
+            <h3>📄 确认批量操作</h3>
+            <table id="batchPreviewTable"></table>
+            <div style="text-align:right; margin-top:20px">
+                <button onclick="executeBatch()">✅ 确认执行</button>
+                <button onclick="closeBatchModal()" style="background:#95a5a6">❌ 取消</button>
+            </div>
+        </div>
+        <!-- 库存表格 -->
+        <table id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>编码</th>
+                    <th>物料名称</th>
+                    <th>图片</th>  <!-- 新增图片列 -->
+                    <th>库存</th>
+                    <th>版本</th>
+                    <th>学科</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryBody"></tbody>
+        </table>
+
+        <!-- 出入库弹窗 -->
+        <div id="operationModal" class="modal">
+            <h3 id="modalTitle"></h3>
+            <input type="number" id="quantityInput" min="1" value="1">
+            <div style="text-align:right; margin-top:20px">
+                <button onclick="verifyAuth()">✅ 确认</button>
+                <button onclick="closeModal()" style="background:#95a5a6">❌ 取消</button>
+            </div>
+        </div>
+
+        <!-- 出入库记录 -->
+        <h2>📝 操作记录</h2>
+        <div class="filter-area">
+            <input type="date" id="dateFilter">
+            <button onclick="filterRecords()">⏳ 按日期筛选</button>
+            <button onclick="clearFilter()">🔄 显示全部</button>
+        </div>
+        <table id="recordTable">
+            <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>类型</th>
+                    <th>物料编码</th>
+                    <th>物料名称</th> <!-- 新增列 -->
+                    <th>数量</th>
+                    <th>操作人</th>
+                </tr>
+            </thead>
+            <tbody id="recordBody"></tbody>
+        </table>
+        <button onclick="exportRecords()">📄 导出 Excel</button>
+    </div>
+
+    <!-- 操作权限弹窗 -->
+    <div id="authOverlay" class="modal">
+        <h3>🔑 请输入操作密码</h3>
+        <input type="password" id="passwordInput" placeholder="请输入密码">
+        <!-- 操作人选择 -->
+        <h3>👤 选择操作人</h3>
+        <select id="operatorSelect">
+            <option value="荆瑞涛">荆瑞涛</option>
+            <option value="李圆">李圆</option>
+            <option value="郭宇">郭宇</option>
+        </select>
+        <div style="text-align:right">
+            <button onclick="checkPassword()">✅ 确认</button>
+            <button onclick="closeAuth()" style="background:#95a5a6">❌ 取消</button>
+        </div>
+        <p id="authMessage" style="color:#e74c3c;"></p>
+    </div>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+
+    <script>
+
+        // Firebase配置（请替换为您的配置）
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh-5zkP6EGm-pFoXPDJM1Y7kKDcE2J0-8",
+            authDomain: "inventory-management-20f47.firebaseapp.com",
+            databaseURL: "https://inventory-management-20f47-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "inventory-management-20f47",
+            storageBucket: "inventory-management-20f47.firebasestorage.app",
+            messagingSenderId: "985693463831",
+            appId: "1:985693463831:web:9cb7421d2ddd0797a2c352"
+        };
+
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // 全局变量
+        const OPERATION_PASSWORD = "youdao123";
+        let currentMaterial = null;
+        let operationType = "";
+
+        // 初始化数据
+        function initializeData() {
+            const ref = database.ref('materials');
+            ref.once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    const initialData = {
+                        "0": { id:"WP-65-29995", name: "高考物理高频模型清单", stock: 50, version: "高频", subject: "物理", image: "" },
+                        "1": { id:"WP-128-32406", name: "高考生物高频模型清单", stock: 100, version: "高频", subject: "生物", image: "" },
+                        "2": { id:"WP-65-29997", name: "强基计划校测数学标准教程", stock: 40, version: "高频", subject: "强基数学", image: "" },
+                        "3": { id:"WP-65-29996", name: "强基计划校测物理标准教程", stock: 10, version: "高频", subject: "强基物理", image: "" },
+                        "4": { id:"WP-128-32397", name: "高考数学高频模型清单（上）", stock: 6, version: "高频", subject: "数学", image: "" }
+                    };
+                    ref.set(initialData);
+                }
+            });
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeData();
+            renderInventory();
+            renderRecords();
+        });
+        let page = 0;
+        const itemsPerPage = 10;
+        // 实时渲染库存
+        function renderInventory() {
+            const ref = database.ref('materials');
+            ref.on('value', (snapshot) => {
+                const tbody = document.getElementById('inventoryBody');
+                tbody.innerHTML = '';
+                const allData = [];
+                snapshot.forEach(childSnapshot => {
+
+                    const material = childSnapshot.val();
+                    const row = `
+                        <tr>
+                            <td>${material.id}</td> <!-- 显示 id -->
+                            <td>${material.name}</td>
+                            <td>
+                                ${material.image ?
+                                    `<img src="${material.image}" class="material-image" loading="lazy">` :
+                                    '无图片'}
+                                <div class="upload-btn-wrapper">
+                                    <button class="upload-btn" onclick="handleImageUpload('${childSnapshot.key}')">📤 上传</button>
+                                </div>
+                            </td>
+                            <td>${material.stock}</td>
+                            <td>${material.version}</td>
+                            <td>${material.subject}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button onclick="showModal('${material.id}', '出库')">出库</button>
+                                    <button onclick="showModal('${material.id}', '入库')">入库</button>
+                                </div>
+                            </td>
+
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            });
+            ref.once('value').then(snapshot => {
+                snapshot.forEach(child => {
+                    const key = child.key;
+                    const data = child.val();
+                    if (!data.id) {
+                        // 根据 key 映射到初始数据中的 id
+                        const initialIDs = {
+                            "0": "WP-65-29995",
+                            "1": "WP-128-32406",
+                            "2": "WP-65-29997",
+                            "3": "WP-65-29996",
+                            "4": "WP-128-32397"
+                        };
+                        ref.child(key).update({ id: initialIDs[key] });
+                    }
+                });
+            });
+            ref.on('value', (snapshot) => {
+                const tbody = document.getElementById('inventoryBody');
+                tbody.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const material = childSnapshot.val();
+                    const row = `
+                        <tr>
+                            <td>${material.id}</td>
+                            <td>${material.name}</td>
+                            <td>
+                                ${material.image ?
+                                    `<img src="${material.image}" class="material-image">` :
+                                    '无图片'}
+                                <div class="upload-btn-wrapper">
+                                    <button class="upload-btn"
+                                        onclick="handleImageUpload('${childSnapshot.key}')">
+                                        📤 上传
+                                    </button>
+                                </div>
+                            </td>
+                            <td>${material.stock}</td>
+                            <td>${material.version}</td>
+                            <td>${material.subject}</td>
+                            <td>
+                                <button onclick="showModal('${childSnapshot.key}', '出库')">出库</button>
+                                <button onclick="showModal('${childSnapshot.key}', '入库')">入库</button>
+                            </td>
+
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            });
+        }
+
+        // 搜索功能
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const subject = document.getElementById('subjectFilter').value;
+            const version = document.getElementById('versionFilter').value;
+
+            const rows = document.querySelectorAll('#inventoryBody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const code = cells[0].textContent.toLowerCase();
+                const name = cells[1].textContent.toLowerCase();
+                const subj = cells[5].textContent;
+                const ver = cells[4].textContent;
+
+                const matchSearch = code.includes(searchTerm) || name.includes(searchTerm);
+                const matchSubject = !subject || subj === subject;
+                const matchVersion = !version || ver === version;
+
+                row.style.display = (matchSearch && matchSubject && matchVersion) ? '' : 'none';
+            });
+        }
+
+        // 弹窗操作
+        function showModal(materialId, type) {
+            operationType = type;
+            const ref = database.ref('materials');
+            ref.orderByChild('id').equalTo(materialId).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    const materialKey = Object.keys(snapshot.val())[0]; // 获取 Firebase key
+                    currentMaterial = materialKey; // 这里存的是 Firebase key，不是 id
+                    document.getElementById("modalTitle").textContent = `${type}操作 - ${materialId}`;
+                    document.getElementById("operationModal").style.display = "block";
+                } else {
+                    showToast('❌ 拉取物料失败');
+                }
+            });
+        }
+        function showToast(message) {
+             let toast = document.createElement("div");
+             toast.textContent = message;
+             toast.style.cssText = `
+                 position: fixed;
+                 bottom: 20px;
+                 left: 50%;
+                 transform: translateX(-50%);
+                 background: rgba(0, 0, 0, 0.8);
+                 color: white;
+                 padding: 10px 20px;
+                 border-radius: 5px;
+                 font-size: 16px;
+                 z-index: 9999;
+             `;
+             document.body.appendChild(toast);
+             setTimeout(() => toast.remove(), 3000); // 3秒后自动消失
+        }
+
+        function confirmOperation() {
+            const quantity = parseInt(document.getElementById('quantityInput').value);
+            const operator = sessionStorage.getItem("currentOperator") || "未知";
+            if (quantity <= 0 || isNaN(quantity)) {
+                showToast('❌ 操作数量必须大于0');
+                return;
+            }
+
+            const stockRef = database.ref(`materials/${currentMaterial}/stock`);
+            stockRef.once('value').then(snapshot => {
+                let currentStock = snapshot.val();
+                if (operationType === '出库' && quantity > currentStock) {
+                    showToast(`❌ 出库失败：库存不足 (当前库存：${currentStock})`);
+                    return;
+                }
+
+                stockRef.transaction(currentStock => {
+                    return operationType === '出库' ? currentStock - quantity : currentStock + quantity;
+                }, (error, committed) => {
+                    if (error || !committed) {
+                        showToast('❌ 操作失败，请重试');
+                    } else {
+                        const materialRef = database.ref(`materials/${currentMaterial}`);
+                        materialRef.once('value').then(materialSnapshot => {
+                            const materialData = materialSnapshot.val();
+                            const recordRef = database.ref('records').push();
+                            recordRef.set({
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                type: operationType,
+                                code: materialData.id,  // 存物料的 id
+                                name: materialData.name,
+                                quantity: quantity,
+                                operator: operator
+                            }).then(() => {
+                                showToast('✅ 操作成功');
+                                closeModal();
+                            });
+                        }).catch(error => {
+                            showToast('❌ 获取物料信息失败');
+                        });
+                    }
+                });
+            }).catch(error => {
+                showToast('❌ 无法获取库存，请检查数据库连接');
+            });
+        }
+
+
+        function closeModal() {
+            document.getElementById('operationModal').style.display = 'none';
+        }
+
+        // 操作记录
+        function renderRecords(filterDate = null) {
+            const ref = database.ref('records');
+            ref.on('value', (snapshot) => {
+                const tbody = document.getElementById('recordBody');
+                tbody.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const record = childSnapshot.val();
+                    const date = new Date(record.timestamp);
+                    if (!filterDate || date.toDateString() === new Date(filterDate).toDateString()) {
+                        const row = `
+                            <tr>
+                                <td>${date.toLocaleString()}</td>
+                                <td>${record.type}</td>
+                                <td>${record.code}</td>
+                                <td>${record.name}</td>
+                                <td>${record.quantity}</td>
+                                <td>${record.operator}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    }
+                });
+            });
+        }
+
+        function filterRecords() {
+            const date = document.getElementById('dateFilter').value;
+            renderRecords(date);
+        }
+
+        function clearFilter() {
+            document.getElementById('dateFilter').value = '';
+            renderRecords();
+        }
+
+        // 初始化系统
+        initializeData();
+        renderInventory();
+        renderRecords();
+
+
+        function showModal(code, type) {
+            operationType = type;
+            currentMaterial = code;
+            document.getElementById("modalTitle").textContent = `${type}操作 - ${code}`;
+            document.getElementById("operationModal").style.display = "block";
+        }
+
+
+        function closeModal() {
+            document.getElementById("operationModal").style.display = "none";
+        }
+
+        function verifyAuth() {
+            let expireTime = sessionStorage.getItem("authExpireTime");
+            if (sessionStorage.getItem("inventoryAuth") && Date.now() < expireTime) {
+                confirmOperation(); // 密码还在有效期内，直接执行操作
+            } else {
+                sessionStorage.removeItem("inventoryAuth"); // 清除过期密码
+                sessionStorage.removeItem("authExpireTime");
+                document.getElementById("authOverlay").style.display = "block";// 重新输入密码
+            }
+        }
+
+        function checkPassword() {
+            const input = document.getElementById("passwordInput").value;
+            const selectedOperator = document.getElementById("operatorSelect").value; // 获取操作人
+            if (input === OPERATION_PASSWORD) {
+                let expireTime = Date.now() + 10 * 60 * 1000; // 当前时间 + 10 分钟
+                sessionStorage.setItem("inventoryAuth", "true");
+                sessionStorage.setItem("authExpireTime", Date.now() + 10 * 60 * 1000);
+                sessionStorage.setItem("currentOperator", selectedOperator); // 存储操作人
+                document.getElementById("authOverlay").style.display = "none";
+                confirmOperation();
+            } else {
+                document.getElementById("authMessage").textContent = "密码错误，请重试";
+            }
+        }
+
+        function closeAuth() {
+            document.getElementById("authOverlay").style.display = "none";
+        }
+
+
+
+        function exportRecords() {
+            let table = document.getElementById("recordTable");
+            let rows = table.querySelectorAll("tr");
+            let csvContent = "";
+
+            rows.forEach(row => {
+                let cols = row.querySelectorAll("th, td");
+                let rowData = [];
+                cols.forEach(col => rowData.push(col.innerText));
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            let blob = new Blob([csvContent], { type: "text/csv" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "库存操作记录.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        function handleBatchImport(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            parseFile(file, async (data) => {
+                try {
+                    const materialsRef = database.ref('materials');
+                    const recordsRef = database.ref('records');
+                    const operator = sessionStorage.getItem("currentOperator") || "系统"; // 记录操作人
+
+                    // 遍历导入的数据，每条数据对应一个入库操作
+                    const promises = data.map(async (row) => {
+                        let id = row['编码'] ? row['编码'].trim().toUpperCase() : ''; // 清除空格 & 统一格式
+                        const name = row['物料名称'];
+                        const quantity = parseInt(row['数量']);
+                        const version = row['版本'];
+                        const subject = row['学科'];
+
+                        if (!id || isNaN(quantity)) {
+                            showToast(`❌ 无效数据行：${JSON.stringify(row)}`);
+                            return;
+                        }
+
+                        // 先查找该 id 是否存在
+                        const snapshot = await materialsRef.orderByChild('id').equalTo(id).once('value');
+
+                        if (snapshot.exists()) {
+                            const key = Object.keys(snapshot.val())[0]; // 获取 Firebase key
+                            await materialsRef.child(`${key}/stock`).transaction(current => (current || 0) + quantity);
+
+                            // ✅ 记录入库操作
+                            await recordsRef.push({
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                type: "批量入库",
+                                code: id,  // 记录 `id` 而不是 Firebase `key`
+                                name: name,
+                                quantity: quantity,
+                                operator: operator
+                            });
+                        } else {
+                            // 如果 id 不存在，创建新的物料记录
+                            const newRef = materialsRef.push();
+                            await newRef.set({
+                                id: id, // 确保存储 id
+                                name: name,
+                                stock: quantity,
+                                version: version,
+                                subject: subject,
+                                image: ""
+                            });
+                        // ✅ 记录新物料入库
+                            await recordsRef.push({
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                type: "批量入库（新建）",
+                                code: id,
+                                name: name,
+                                quantity: quantity,
+                                operator: operator
+                            });
+                        }
+                    });
+
+                    await Promise.all(promises);
+                    showToast('✅ 批量入库成功');
+                    renderInventory(); // 刷新前端
+                    renderRecords();   // 刷新操作记录
+                } catch (error) {
+                    showToast('❌ 批量入库失败: ' + error.message);
+                }
+            });
+        }
+
+
+        function handleBatchExport(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            parseFile(file, async (data) => {
+                try {
+                    const materialsRef = database.ref('materials');
+                    const recordsRef = database.ref('records');
+                    const operator = sessionStorage.getItem("currentOperator") || "系统"; // 记录操作人
+
+                    const promises = data.map(async (row) => {
+                        let id = row['编码'] ? row['编码'].trim().toUpperCase() : ''; // 清除空格 & 统一格式
+                        const quantity = parseInt(row['数量']);
+
+                        if (!id || isNaN(quantity)) {
+                            showToast(`❌ 无效数据行：${JSON.stringify(row)}`);
+                            return;
+                        }
+
+                        // 查询 Firebase，确保 id 存在
+                        const snapshot = await materialsRef.orderByChild('id').equalTo(id).once('value');
+
+                        if (snapshot.exists()) {
+                            const key = Object.keys(snapshot.val())[0]; // 获取 Firebase key
+                            const materialData = snapshot.val()[key];  // 获取完整物料信息
+                            const stockRef = materialsRef.child(`${key}/stock`);
+
+                            await stockRef.transaction(currentStock => {
+                                if ((currentStock || 0) < quantity) {
+                                    showToast(`❌ 物料 ${id} 库存不足，出库失败`);
+                                    return currentStock; // 不更新
+                                }
+                                return currentStock - quantity;
+                            });
+
+                            // ✅ 记录出库操作
+                            await recordsRef.push({
+                                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                                type: "批量出库",
+                                code: id,
+                                name: materialData.name,  // 物料名称
+                                quantity: quantity,
+                                operator: operator
+                            });
+
+                        } else {
+                            showToast(`❌ 物料 ${id} 不存在，出库失败`);
+                        }
+                    });
+
+                    await Promise.all(promises);
+                    showToast('✅ 批量出库成功');
+                    renderInventory(); // 刷新前端
+                    renderRecords();   // 刷新操作记录
+                } catch (error) {
+                    showToast('❌ 批量出库失败: ' + error.message);
+                }
+            });
+        }
+
+        function exportInventory() {
+            const ref = database.ref('materials');
+            ref.once('value').then(snapshot => {
+                let csvContent = "编码,名称,库存,版本,学科\n";
+                snapshot.forEach(childSnapshot => {
+                    let mat = childSnapshot.val();
+                    csvContent += `${mat.id},${mat.name},${mat.stock},${mat.version},${mat.subject}\n`;
+                });
+
+                let blob = new Blob([csvContent], { type: "text/csv" });
+                let link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "库存数据.csv";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+        function parseFile(file, callback) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                try { // 添加错误处理
+                    let data = new Uint8Array(e.target.result);
+                    let workbook = XLSX.read(data, { type: 'array' });
+                    let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    let json = XLSX.utils.sheet_to_json(sheet);
+                    callback(json);
+                } catch (error) {
+                    showToast('❌ 文件解析失败: ' + error.message);
+                }
+            };
+            reader.onerror = () => showToast('❌ 文件读取失败');
+            reader.readAsArrayBuffer(file);
+        }
+        function handleImageUpload(materialCode) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (readerEvent) => {
+                    const img = new Image();
+                    img.src = readerEvent.target.result;
+                    img.onload = function () {
+                        // 1. 创建一个 canvas 进行压缩
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // 2. 设置最大宽度和高度（例如 150x100）
+                        const maxWidth = 150;
+                        const maxHeight = 100;
+                        let { width, height } = img;
+
+                        if (width > maxWidth || height > maxHeight) {
+                            const scale = Math.min(maxWidth / width, maxHeight / height);
+                            width *= scale;
+                            height *= scale;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 3. 将图片转换为 Base64（质量 0.6，减少体积）
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+                        // 4. 存入 Firebase
+                        database.ref(`materials/${materialCode}/image`).set(compressedBase64)
+                            .then(() => {
+                                showToast('✅ 图片上传成功');
+                                renderInventory(); // 刷新页面
+                            })
+                            .catch(error => {
+                                showToast('❌ 图片上传失败');
+                            });
+                    };
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+
+
+    </script>
+
+</body>
+</html>
