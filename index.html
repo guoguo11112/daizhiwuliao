@@ -3,7 +3,7 @@
 <head>
     <!-- 图片区域 -->
     <div class="image-area">
-        <div style="font-size: 66px;">【有道领世】在司物料库存管理</div>
+        <div style="font-size: 86px;">【有道领世】在司物料库存管理</div>
     </div>
     <meta charset="UTF-8">
     <title>实时库存管理</title>
@@ -441,6 +441,8 @@
 
                 row.style.display = (matchSearch && matchSubject && matchVersion) ? '' : 'none';
             });
+            // 清空搜索框内容
+            document.getElementById('searchInput').value = '';
         }
 
         // 弹窗操作
@@ -685,7 +687,8 @@
                                 subject: subject,
                                 image: ""
                             });
-                        // ✅ 记录新物料入库
+
+                            // ✅ 记录新物料入库
                             await recordsRef.push({
                                 timestamp: firebase.database.ServerValue.TIMESTAMP,
                                 type: "批量入库（新建）",
@@ -694,6 +697,9 @@
                                 quantity: quantity,
                                 operator: operator
                             });
+
+                            // 动态更新筛选栏的版本和学科选项
+                            updateFilterOptions(version, subject);
                         }
                     });
 
@@ -820,25 +826,33 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
-                        // 2. 设置最大宽度和高度（例如 150x100）
-                        const maxWidth = 150;
-                        const maxHeight = 100;
+                        // 2. 设置最大宽度和高度（例如 800px 宽度，高度按比例缩放）
+                        const maxWidth = 800;
+                        const maxHeight = 600;
                         let { width, height } = img;
 
+                        // 按比例缩放图片
                         if (width > maxWidth || height > maxHeight) {
                             const scale = Math.min(maxWidth / width, maxHeight / height);
                             width *= scale;
                             height *= scale;
                         }
 
+                        // 设置 canvas 尺寸
                         canvas.width = width;
                         canvas.height = height;
+
+                        // 3. 填充白色背景
+                        ctx.fillStyle = '#FFFFFF'; // 设置背景为白色
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                        // 4. 绘制图片到 canvas
                         ctx.drawImage(img, 0, 0, width, height);
 
-                        // 3. 将图片转换为 Base64（质量 0.6，减少体积）
-                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                        // 5. 将图片转换为 Base64（提高 JPEG 质量到 0.8）
+                        const compressedBase64 = canvas.toDataURL('image/webp', 0.8);
 
-                        // 4. 存入 Firebase
+                        // 6. 存入 Firebase Realtime Database
                         database.ref(`materials/${materialCode}/image`).set(compressedBase64)
                             .then(() => {
                                 showToast('✅ 图片上传成功');
@@ -852,6 +866,40 @@
                 reader.readAsDataURL(file);
             };
             input.click();
+        }
+        function updateFilterOptions(version, subject) {
+            const versionFilter = document.getElementById('versionFilter');
+            const subjectFilter = document.getElementById('subjectFilter');
+
+            // 检查版本是否已经存在
+            let versionExists = false;
+            for (let option of versionFilter.options) {
+                if (option.value === version) {
+                    versionExists = true;
+                    break;
+                }
+            }
+            if (!versionExists && version) {
+                const newOption = document.createElement('option');
+                newOption.value = version;
+                newOption.textContent = version;
+                versionFilter.appendChild(newOption);
+            }
+
+            // 检查学科是否已经存在
+            let subjectExists = false;
+            for (let option of subjectFilter.options) {
+                if (option.value === subject) {
+                    subjectExists = true;
+                    break;
+                }
+            }
+            if (!subjectExists && subject) {
+                const newOption = document.createElement('option');
+                newOption.value = subject;
+                newOption.textContent = subject;
+                subjectFilter.appendChild(newOption);
+            }
         }
 
 
