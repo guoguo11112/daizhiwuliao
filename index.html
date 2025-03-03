@@ -942,6 +942,9 @@
                 newOption.value = version;
                 newOption.textContent = version;
                 versionFilter.appendChild(newOption);
+
+                // 将新版本存储到 Firebase
+                database.ref('filterOptions/versions').push(version);
             }
 
             // 检查学科是否已经存在
@@ -957,8 +960,78 @@
                 newOption.value = subject;
                 newOption.textContent = subject;
                 subjectFilter.appendChild(newOption);
+
+                // 将新学科存储到 Firebase
+                database.ref('filterOptions/subjects').push(subject);
             }
         }
+
+        function loadFilterOptions() {
+            const versionFilter = document.getElementById('versionFilter');
+            const subjectFilter = document.getElementById('subjectFilter');
+
+            // 清空旧的筛选项（保留 "所有版本" 和 "所有学科"）
+            versionFilter.innerHTML = `<option value="">所有版本</option>`;
+            subjectFilter.innerHTML = `<option value="">所有学科</option>`;
+
+            const ref = database.ref('materials');
+
+        ref.once('value').then(snapshot => {
+            const versions = new Set(); // 存储去重后的版本
+            const subjects = new Set(); // 存储去重后的学科
+
+            snapshot.forEach(childSnapshot => {
+                const material = childSnapshot.val();
+                if (material.version) versions.add(material.version);
+                if (material.subject) subjects.add(material.subject);
+            });
+
+            // 添加筛选项
+            versions.forEach(version => {
+                let option = document.createElement('option');
+                option.value = version;
+                option.textContent = version;
+                versionFilter.appendChild(option);
+            });
+
+            subjects.forEach(subject => {
+                let option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                subjectFilter.appendChild(option);
+                });
+            });
+
+            // 从 Firebase 读取版本信息
+            database.ref('filterOptions/versions').once('value').then(snapshot => {
+                snapshot.forEach(childSnapshot => {
+                    const version = childSnapshot.val();
+                    const option = document.createElement('option');
+                    option.value = version;
+                    option.textContent = version;
+                    versionFilter.appendChild(option);
+                });
+            });
+
+            // 从 Firebase 读取学科信息
+            database.ref('filterOptions/subjects').once('value').then(snapshot => {
+                snapshot.forEach(childSnapshot => {
+                    const subject = childSnapshot.val();
+                    const option = document.createElement('option');
+                    option.value = subject;
+                    option.textContent = subject;
+                    subjectFilter.appendChild(option);
+                });
+            });
+        }
+
+        // 在页面加载时调用
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeData();
+            renderInventory();
+            renderRecords();
+            loadFilterOptions(); // 加载筛选选项
+        });
 
 
 
