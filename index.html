@@ -263,6 +263,22 @@
             <tbody id="recordBody"></tbody>
         </table>
         <button onclick="exportRecords()">📄 导出 Excel</button>
+
+    <!-- 操作记录分页控件 -->
+    <div class="pagination-controls">
+        <span>每页显示：</span>
+        <select id="recordsPerPageSelect" onchange="changeRecordsPerPage()">
+            <option value="10">10</option>
+            <option value="15" selected>15</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+        </select>
+        <span>条</span>
+        <button onclick="prevRecordsPage()">上一页</button>
+        <span id="currentRecordsPage">1</span>
+        <span>/</span>
+        <span id="totalRecordsPages">1</span>
+        <button onclick="nextRecordsPage()">下一页</button>
     </div>
 
     <!-- 操作权限弹窗 -->
@@ -531,29 +547,71 @@
             document.getElementById('operationModal').style.display = 'none';
         }
 
-        // 操作记录
+        let currentRecordsPage = 1;
+        let recordsPerPage = 15;
+        let totalRecordsPages = 1;
+
+        function changeRecordsPerPage() {
+            recordsPerPage = parseInt(document.getElementById('recordsPerPageSelect').value);
+            currentRecordsPage = 1;
+            renderRecords();
+        }
+
+        function prevRecordsPage() {
+            if (currentRecordsPage > 1) {
+                currentRecordsPage--;
+                renderRecords();
+            }
+        }
+
+        function nextRecordsPage() {
+            if (currentRecordsPage < totalRecordsPages) {
+                currentRecordsPage++;
+                renderRecords();
+            }
+        }
+
+        function updateRecordsPaginationControls(totalRecords) {
+            totalRecordsPages = Math.ceil(totalRecords / recordsPerPage);
+            document.getElementById('currentRecordsPage').textContent = currentRecordsPage;
+            document.getElementById('totalRecordsPages').textContent = totalRecordsPages;
+        }
+
         function renderRecords(filterDate = null) {
             const ref = database.ref('records');
             ref.on('value', (snapshot) => {
                 const tbody = document.getElementById('recordBody');
                 tbody.innerHTML = '';
+                const allRecords = [];
                 snapshot.forEach(childSnapshot => {
                     const record = childSnapshot.val();
                     const date = new Date(record.timestamp);
                     if (!filterDate || date.toDateString() === new Date(filterDate).toDateString()) {
-                        const row = `
-                            <tr>
-                                <td>${date.toLocaleString()}</td>
-                                <td>${record.type}</td>
-                                <td>${record.code}</td>
-                                <td>${record.name}</td>
-                                <td>${record.quantity}</td>
-                                <td>${record.operator}</td>
-                            </tr>
-                        `;
-                        tbody.innerHTML += row;
+                        allRecords.push(record);
                     }
                 });
+
+                // 分页逻辑
+                const startIndex = (currentRecordsPage - 1) * recordsPerPage;
+                const endIndex = startIndex + recordsPerPage;
+                const paginatedRecords = allRecords.slice(startIndex, endIndex);
+
+                paginatedRecords.forEach(record => {
+                    const date = new Date(record.timestamp);
+                    const row = `
+                        <tr>
+                            <td>${date.toLocaleString()}</td>
+                            <td>${record.type}</td>
+                            <td>${record.code}</td>
+                            <td>${record.name}</td>
+                            <td>${record.quantity}</td>
+                            <td>${record.operator}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+                updateRecordsPaginationControls(allRecords.length);
             });
         }
 
